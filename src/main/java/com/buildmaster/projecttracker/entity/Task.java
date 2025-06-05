@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,7 +15,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "tasks")
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class Task {
 
     @Id
@@ -33,6 +37,12 @@ public class Task {
     @Column(nullable = false, length = 20)
     private TaskStatus status = TaskStatus.TODO;
 
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
     @Column(name = "due_date")
     private LocalDate dueDate;
 
@@ -50,6 +60,7 @@ public class Task {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "developer_id")
     private Developer developer;
+
 
     public Task(String title, String description, LocalDate dueDate, Project project) {
         this.title = title;

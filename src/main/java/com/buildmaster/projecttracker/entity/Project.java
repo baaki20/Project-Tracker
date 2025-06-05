@@ -4,10 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,7 +14,9 @@ import java.util.List;
 @Entity
 @Table(name = "projects")
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor  // Required when using @Builder with @NoArgsConstructor
 @EqualsAndHashCode(exclude = {"tasks"})
 @ToString(exclude = {"tasks"})
 public class Project {
@@ -34,6 +33,12 @@ public class Project {
     @Size(max = 500, message = "Description cannot exceed 500 characters")
     @Column(length = 500)
     private String description;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
 
     @NotNull(message = "Deadline is required")
     @Column(nullable = false)

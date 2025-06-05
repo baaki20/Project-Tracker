@@ -4,10 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,7 +13,9 @@ import java.util.List;
 @Entity
 @Table(name = "developers")
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor  // Required when using @Builder with @NoArgsConstructor
 @EqualsAndHashCode(exclude = {"tasks"})
 @ToString(exclude = {"tasks"})
 public class Developer {

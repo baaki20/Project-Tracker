@@ -1,5 +1,6 @@
 package com.buildmaster.projecttracker.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -55,12 +56,13 @@ public class Task {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     @NotNull(message = "Task must belong to a project")
+    @JsonIgnoreProperties({"tasks", "hibernateLazyInitializer", "handler"})
     private Project project;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "developer_id")
+    @JsonIgnoreProperties({"tasks", "hibernateLazyInitializer", "handler"})
     private Developer developer;
-
 
     public Task(String title, String description, LocalDate dueDate, Project project) {
         this.title = title;

@@ -1,5 +1,6 @@
 package com.buildmaster.projecttracker.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -15,7 +16,7 @@ import java.util.List;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor  // Required when using @Builder with @NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(exclude = {"tasks"})
 @ToString(exclude = {"tasks"})
 public class Developer {
@@ -45,6 +46,8 @@ public class Developer {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "developer", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties({"developer", "hibernateLazyInitializer", "handler"})
+    @Builder.Default
     private List<Task> tasks = new ArrayList<>();
 
     public Developer(String name, String email, String skills) {
@@ -65,12 +68,17 @@ public class Developer {
     }
 
     public void addTask(Task task) {
+        if (tasks == null) {
+            tasks = new ArrayList<>();
+        }
         tasks.add(task);
         task.setDeveloper(this);
     }
 
     public void removeTask(Task task) {
-        tasks.remove(task);
-        task.setDeveloper(null);
+        if (tasks != null) {
+            tasks.remove(task);
+            task.setDeveloper(null);
+        }
     }
 }

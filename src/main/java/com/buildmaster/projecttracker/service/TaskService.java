@@ -29,6 +29,11 @@ public class TaskService {
     private final DeveloperRepository developerRepository;
     private final AuditLogRepository auditLogRepository;
 
+    public Optional<Task> findById(Long id) {
+        log.debug("Fetching task with id: {}", id);
+        return taskRepository.findById(id);
+    }
+
     public Page<Task> findAll(Pageable pageable) {
         return taskRepository.findAll(pageable);
     }
@@ -77,7 +82,23 @@ public class TaskService {
         auditLogRepository.save(new AuditLog(actionType, "Task",
                 savedTask.getId().toString(), "system", payload));
 
+        log.info("Task {} successfully: {}", actionType.toLowerCase(), savedTask.getTitle());
         return savedTask;
+    }
+
+    @Transactional
+    public void deleteById(Long id) {
+        Optional<Task> task = taskRepository.findById(id);
+        if (task.isPresent()) {
+            taskRepository.deleteById(id);
+
+            // Create audit log
+            Map<String, Object> payload = createTaskPayload(task.get());
+            auditLogRepository.save(new AuditLog("DELETE", "Task",
+                    id.toString(), "system", payload));
+
+            log.info("Task deleted successfully: {}", task.get().getTitle());
+        }
     }
 
     public List<Object[]> getTaskCountsByStatus() {
@@ -91,9 +112,15 @@ public class TaskService {
         payload.put("description", task.getDescription());
         payload.put("status", task.getStatus());
         payload.put("dueDate", task.getDueDate());
-        payload.put("projectId", task.getProject().getId());
+        payload.put("startDate", task.getStartDate());
+        payload.put("endDate", task.getEndDate());
+        if (task.getProject() != null) {
+            payload.put("projectId", task.getProject().getId());
+            payload.put("projectName", task.getProject().getName());
+        }
         if (task.getDeveloper() != null) {
             payload.put("developerId", task.getDeveloper().getId());
+            payload.put("developerName", task.getDeveloper().getName());
         }
         return payload;
     }

@@ -9,6 +9,8 @@ import com.buildmaster.projecttracker.repository.DeveloperRepository;
 import com.buildmaster.projecttracker.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,28 +31,34 @@ public class TaskService {
     private final DeveloperRepository developerRepository;
     private final AuditLogRepository auditLogRepository;
 
+    @Cacheable(value = "tasks")
     public Optional<Task> findById(Long id) {
         log.debug("Fetching task with id: {}", id);
         return taskRepository.findById(id);
     }
 
+    @Cacheable(value = "tasks")
     public Page<Task> findAll(Pageable pageable) {
         return taskRepository.findAll(pageable);
     }
 
+    @Cacheable(value = "tasks")
     public Page<Task> findByProjectId(Long projectId, Pageable pageable) {
         return taskRepository.findByProjectId(projectId, pageable);
     }
 
+    @Cacheable(value = "tasks")
     public Page<Task> findByDeveloperId(Long developerId, Pageable pageable) {
         return taskRepository.findByDeveloperId(developerId, pageable);
     }
 
+    @Cacheable(value = "tasks")
     public List<Task> findOverdueTasks() {
         return taskRepository.findOverdueTasks(LocalDate.now());
     }
 
     @Transactional
+    @CacheEvict(value = "tasks", allEntries = true)
     public Task assignTaskToDeveloper(Long taskId, Long developerId) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
@@ -61,7 +69,6 @@ public class TaskService {
         task.setDeveloper(developer);
         Task savedTask = taskRepository.save(task);
 
-        // Create audit log
         Map<String, Object> payload = createTaskPayload(savedTask);
         payload.put("assignedDeveloper", developer.getName());
         auditLogRepository.save(new AuditLog("UPDATE", "Task",
@@ -72,11 +79,11 @@ public class TaskService {
     }
 
     @Transactional
+    @CacheEvict(value = "tasks", allEntries = true)
     public Task save(Task task) {
         boolean isNew = task.getId() == null;
         Task savedTask = taskRepository.save(task);
 
-        // Create audit log
         Map<String, Object> payload = createTaskPayload(savedTask);
         String actionType = isNew ? "CREATE" : "UPDATE";
         auditLogRepository.save(new AuditLog(actionType, "Task",
@@ -87,12 +94,12 @@ public class TaskService {
     }
 
     @Transactional
+    @CacheEvict(value = "tasks", allEntries = true)
     public void deleteById(Long id) {
         Optional<Task> task = taskRepository.findById(id);
         if (task.isPresent()) {
             taskRepository.deleteById(id);
 
-            // Create audit log
             Map<String, Object> payload = createTaskPayload(task.get());
             auditLogRepository.save(new AuditLog("DELETE", "Task",
                     id.toString(), "system", payload));
@@ -101,6 +108,7 @@ public class TaskService {
         }
     }
 
+    @Cacheable(value = "tasks")
     public List<Object[]> getTaskCountsByStatus() {
         return taskRepository.countTasksByStatus();
     }

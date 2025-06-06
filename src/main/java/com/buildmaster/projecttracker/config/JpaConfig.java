@@ -8,5 +8,4 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableJpaRepositories(basePackages = "com.buildmaster.projecttracker.repository")
 @EnableTransactionManagement
 public class JpaConfig {
-    // JPA configuration is handled by application.properties
 }

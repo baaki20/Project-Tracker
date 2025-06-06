@@ -16,12 +16,12 @@ public class AuditLog {
     @Id
     private String id;
 
-    private String actionType; // CREATE, UPDATE, DELETE
-    private String entityType; // Project, Task, Developer
+    private String actionType;
+    private String entityType;
     private String entityId;
     private LocalDateTime timestamp;
     private String actorName;
-    private Map<String, Object> payload; // JSON representation of the entity
+    private Map<String, Object> payload;
 
     public AuditLog(String actionType, String entityType, String entityId, String actorName, Map<String, Object> payload) {
         this.actionType = actionType;

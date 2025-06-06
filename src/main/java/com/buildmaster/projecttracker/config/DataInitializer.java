@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Component
-@Slf4j  // Add this annotation
+@Slf4j
 public class DataInitializer implements CommandLineRunner {
 
     private final ProjectRepository projectRepository;
@@ -33,12 +33,10 @@ public class DataInitializer implements CommandLineRunner {
         try {
             log.info("Starting data initialization...");
 
-            // Clear existing data (optional, for demo)
             taskRepository.deleteAll();
             projectRepository.deleteAll();
             developerRepository.deleteAll();
 
-            // Create developers
             Developer devAlice = Developer.builder()
                     .name("Alice Johnson")
                     .email("alice@example.com")
@@ -55,7 +53,6 @@ public class DataInitializer implements CommandLineRunner {
             List<Developer> savedDevs = developerRepository.saveAll(Arrays.asList(devAlice, devBob, devCarol));
             log.info("Created {} developers", savedDevs.size());
 
-            // Create projects
             Project projAlpha = Project.builder()
                     .name("Alpha Project")
                     .description("First project")
@@ -76,14 +73,12 @@ public class DataInitializer implements CommandLineRunner {
             List<Project> savedProjects = projectRepository.saveAll(Arrays.asList(projAlpha, projBeta));
             log.info("Created {} projects", savedProjects.size());
 
-            // Get the saved entities with IDs
             Project savedAlpha = savedProjects.get(0);
             Project savedBeta = savedProjects.get(1);
             Developer savedAlice = savedDevs.get(0);
             Developer savedBob = savedDevs.get(1);
             Developer savedCarol = savedDevs.get(2);
 
-            // Create tasks
             Task task1 = Task.builder()
                     .title("Design DB Schema")
                     .description("Design the initial database schema")

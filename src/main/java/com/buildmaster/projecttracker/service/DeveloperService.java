@@ -50,14 +50,12 @@ public class DeveloperService {
     public Developer save(Developer developer) {
         boolean isNew = developer.getId() == null;
 
-        // Check for duplicate email on new developers
         if (isNew && findByEmail(developer.getEmail()).isPresent()) {
             throw new RuntimeException("Developer with email " + developer.getEmail() + " already exists");
         }
 
         Developer savedDeveloper = developerRepository.save(developer);
 
-        // Create audit log
         Map<String, Object> payload = createDeveloperPayload(savedDeveloper);
         String actionType = isNew ? "CREATE" : "UPDATE";
         auditLogRepository.save(new AuditLog(actionType, "Developer",
@@ -72,14 +70,12 @@ public class DeveloperService {
     public void deleteById(Long id) {
         Optional<Developer> developer = developerRepository.findById(id);
         if (developer.isPresent()) {
-            // Check if developer has assigned tasks
             if (!developer.get().getTasks().isEmpty()) {
                 throw new RuntimeException("Cannot delete developer with assigned tasks. Please reassign tasks first.");
             }
 
             developerRepository.deleteById(id);
 
-            // Create audit log
             Map<String, Object> payload = createDeveloperPayload(developer.get());
             auditLogRepository.save(new AuditLog("DELETE", "Developer",
                     id.toString(), "system", payload));

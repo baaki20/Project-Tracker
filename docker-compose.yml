@@ -19,11 +19,6 @@ services:
       - "27017:27017"
     environment:
       MONGO_INITDB_DATABASE: project_tracker_audit
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   app:
     build: .
@@ -31,7 +26,7 @@ services:
       db:
         condition: service_healthy
       mongo:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/project_tracker
       SPRING_DATASOURCE_USERNAME: postgres

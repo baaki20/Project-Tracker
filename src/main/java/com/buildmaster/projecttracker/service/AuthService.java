@@ -8,7 +8,7 @@ import com.buildmaster.projecttracker.entity.Role;
 import com.buildmaster.projecttracker.entity.User;
 import com.buildmaster.projecttracker.repository.RoleRepository;
 import com.buildmaster.projecttracker.repository.UserRepository;
-import com.buildmaster.projecttracker.security.JwtUtil;
+import com.buildmaster.projecttracker.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;

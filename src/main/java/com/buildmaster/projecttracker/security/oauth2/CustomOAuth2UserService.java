@@ -1,4 +1,134 @@
 package com.buildmaster.projecttracker.security.oauth2;
 
-public class CustomOAuth2UserService {
+import com.buildmaster.projecttracker.entity.AuthProvider;
+import com.buildmaster.projecttracker.entity.Role;
+import com.buildmaster.projecttracker.entity.User;
+import com.buildmaster.projecttracker.repository.RoleRepository;
+import com.buildmaster.projecttracker.repository.UserRepository;
+import com.buildmaster.projecttracker.service.AuditService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class CustomOAuth2UserService extends DefaultOAuth2UserService {
+
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final AuditService auditService;
+
+    @Override
+    @Transactional
+    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
+        OAuth2User oAuth2User = super.loadUser(userRequest);
+
+        try {
+            return processOAuth2User(userRequest, oAuth2User);
+        } catch (Exception ex) {
+            log.error("Error processing OAuth2 user", ex);
+            throw new OAuth2AuthenticationException("Error processing OAuth2 user: " + ex.getMessage());
+        }
+    }
+
+    private OAuth2User processOAuth2User(OAuth2UserRequest userRequest, OAuth2User oAuth2User) {
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+        Map<String, Object> attributes = oAuth2User.getAttributes();
+
+        OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(registrationId, attributes);
+
+        if (userInfo.getEmail() == null || userInfo.getEmail().isEmpty()) {
+            throw new OAuth2AuthenticationException("Email not found from OAuth2 provider");
+        }
+
+        Optional<User> userOptional = userRepository.findByEmail(userInfo.getEmail());
+        User user;
+
+        if (userOptional.isPresent()) {
+            user = userOptional.get();
+            if (!user.getAuthProvider().equals(AuthProvider.valueOf(registrationId.toUpperCase()))) {
+                throw new OAuth2AuthenticationException(
+                        "Looks like you're signed up with " + user.getAuthProvider() +
+                                " account. Please use your " + user.getAuthProvider() + " account to login."
+                );
+            }
+            user = updateExistingUser(user, userInfo);
+        } else {
+            user = registerNewUser(userRequest, userInfo);
+        }
+
+        return new CustomOAuth2User(user, oAuth2User.getAttributes());
+    }
+
+    private User registerNewUser(OAuth2UserRequest userRequest, OAuth2UserInfo userInfo) {
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+
+        User user = User.builder()
+                .username(generateUniqueUsername(userInfo.getName(), userInfo.getEmail()))
+                .email(userInfo.getEmail())
+                .firstName(userInfo.getFirstName())
+                .lastName(userInfo.getLastName())
+                .authProvider(AuthProvider.valueOf(registrationId.toUpperCase()))
+                .providerId(userInfo.getId())
+                .emailVerified(true) // OAuth2 emails are typically verified
+                .enabled(true)
+                .accountNonExpired(true)
+                .accountNonLocked(true)
+                .credentialsNonExpired(true)
+                .build();
+
+        // Assign default role for OAuth2 users
+        Role defaultRole = roleRepository.findByName("ROLE_CONTRACTOR")
+                .orElseThrow(() -> new RuntimeException("Default OAuth2 role ROLE_CONTRACTOR not found"));
+
+        Set<Role> roles = new HashSet<>();
+        roles.add(defaultRole);
+        user.setRoles(roles);
+
+        User savedUser = userRepository.save(user);
+
+        // Log OAuth2 registration
+        auditService.logUserRegistration(savedUser);
+
+        log.info("New OAuth2 user registered: {} via {}", savedUser.getEmail(), savedUser.getAuthProvider());
+
+        return savedUser;
+    }
+
+    private User updateExistingUser(User existingUser, OAuth2UserInfo userInfo) {
+        existingUser.setFirstName(userInfo.getFirstName());
+        existingUser.setLastName(userInfo.getLastName());
+
+        User updatedUser = userRepository.save(existingUser);
+
+        log.info("Existing OAuth2 user updated: {}", updatedUser.getEmail());
+
+        return updatedUser;
+    }
+
+    private String generateUniqueUsername(String name, String email) {
+        String baseUsername = name != null ? name.toLowerCase().replaceAll("[^a-zA-Z0-9]", "")
+                : email.split("@")[0].toLowerCase();
+
+        String username = baseUsername;
+        int counter = 1;
+
+        while (userRepository.existsByUsername(username)) {
+            username = baseUsername + counter;
+            counter++;
+        }
+
+        return username;
+    }
 }

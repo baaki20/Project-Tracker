@@ -51,14 +51,18 @@ public class AuditLog {
     @Column(name = "error_message", length = 1000)
     private String errorMessage;
 
-    // Store additional data as JSON
+    /**
+     * Stores additional data as key-value pairs in a separate table.
+     * The `property_value` column is explicitly defined as TEXT to resolve
+     * Hibernate's inability to determine the SQL type for Map values.
+     */
     @ElementCollection
     @CollectionTable(name = "audit_log_payload", joinColumns = @JoinColumn(name = "audit_log_id"))
-    @MapKeyColumn(name = "property_key")
-    @Column(name = "property_value", length = 1000)
-    private Map<String, Object> payload;
+    @MapKeyColumn(name = "property_key", length = 255) // Added length for property_key for consistency
+    @Column(name = "property_value", length = 1000, columnDefinition = "TEXT") // Explicitly define as TEXT
+    private Map<String, String> payload;
 
-    public AuditLog(String actionType, String entityType, String entityId, String userId, Map<String, Object> payload) {
+    public AuditLog(String actionType, String entityType, String entityId, String userId, Map<String, String> payload) {
         this.actionType = actionType;
         this.entityType = entityType;
         this.entityId = entityId;

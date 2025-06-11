@@ -1,7 +1,7 @@
 package com.buildmaster.projecttracker.service;
 
 import com.buildmaster.projecttracker.audit.AuditLog;
-import com.buildmaster.projecttracker.audit.AuditLogRepository;
+import com.buildmaster.projecttracker.repository.AuditLogRepository;
 import com.buildmaster.projecttracker.entity.Developer;
 import com.buildmaster.projecttracker.entity.Task;
 import com.buildmaster.projecttracker.repository.DeveloperRepository;
@@ -68,8 +68,9 @@ public class TaskService {
         task.setDeveloper(developer);
         Task savedTask = taskRepository.save(task);
 
-        Map<String, Object> payload = createTaskPayload(savedTask);
-        payload.put("assignedDeveloper", developer.getName());
+        // Create audit log with String-based payload
+        Map<String, String> payload = createTaskStringPayload(savedTask);
+        payload.put("assignedDeveloper", developer.getName()); // Add assigned developer name to payload
         auditLogRepository.save(new AuditLog("UPDATE", "Task",
                 taskId.toString(), "system", payload));
 
@@ -83,7 +84,8 @@ public class TaskService {
         boolean isNew = task.getId() == null;
         Task savedTask = taskRepository.save(task);
 
-        Map<String, Object> payload = createTaskPayload(savedTask);
+        // Create audit log with String-based payload
+        Map<String, String> payload = createTaskStringPayload(savedTask);
         String actionType = isNew ? "CREATE" : "UPDATE";
         auditLogRepository.save(new AuditLog(actionType, "Task",
                 savedTask.getId().toString(), "system", payload));
@@ -99,7 +101,8 @@ public class TaskService {
         if (task.isPresent()) {
             taskRepository.deleteById(id);
 
-            Map<String, Object> payload = createTaskPayload(task.get());
+            // Create audit log with String-based payload
+            Map<String, String> payload = createTaskStringPayload(task.get());
             auditLogRepository.save(new AuditLog("DELETE", "Task",
                     id.toString(), "system", payload));
 
@@ -112,21 +115,29 @@ public class TaskService {
         return taskRepository.countTasksByStatus();
     }
 
-    private Map<String, Object> createTaskPayload(Task task) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("id", task.getId());
+    /**
+     * Creates a payload map for AuditLog, ensuring all values are strings.
+     * This method is crucial for compatibility with AuditLog's Map<String, String> payload.
+     * Converts various object types to String for consistent audit logging.
+     * @param task The Task object from which to create the payload.
+     * @return A Map<String, String> representing the task's data.
+     */
+    private Map<String, String> createTaskStringPayload(Task task) {
+        Map<String, String> payload = new HashMap<>();
+        payload.put("id", task.getId() != null ? task.getId().toString() : null);
         payload.put("title", task.getTitle());
         payload.put("description", task.getDescription());
-        payload.put("status", task.getStatus());
-        payload.put("dueDate", task.getDueDate());
-        payload.put("startDate", task.getStartDate());
-        payload.put("endDate", task.getEndDate());
+        payload.put("status", task.getStatus() != null ? task.getStatus().toString() : null); // Convert Enum to String
+        payload.put("dueDate", task.getDueDate() != null ? task.getDueDate().toString() : null); // Convert LocalDate to String
+        payload.put("startDate", task.getStartDate() != null ? task.getStartDate().toString() : null); // Convert LocalDate to String
+        payload.put("endDate", task.getEndDate() != null ? task.getEndDate().toString() : null); // Convert LocalDate to String
+
         if (task.getProject() != null) {
-            payload.put("projectId", task.getProject().getId());
+            payload.put("projectId", task.getProject().getId() != null ? task.getProject().getId().toString() : null);
             payload.put("projectName", task.getProject().getName());
         }
         if (task.getDeveloper() != null) {
-            payload.put("developerId", task.getDeveloper().getId());
+            payload.put("developerId", task.getDeveloper().getId() != null ? task.getDeveloper().getId().toString() : null);
             payload.put("developerName", task.getDeveloper().getName());
         }
         return payload;

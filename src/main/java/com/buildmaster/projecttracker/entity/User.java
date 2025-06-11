@@ -185,4 +185,21 @@ public class User implements UserDetails {
         }
         return false;
     }
+
+    // Add this setter for compatibility with setProvider usage
+    public void setProvider(AuthProvider provider) {
+        this.authProvider = provider;
+    }
+
+    // Add this setter for compatibility with setName usage in OAuth2UserServiceImpl
+    public void setName(String name) {
+        if (name == null || name.isBlank()) {
+            this.firstName = "";
+            this.lastName = "";
+            return;
+        }
+        String[] parts = name.trim().split("\\s+", 2);
+        this.firstName = parts[0];
+        this.lastName = (parts.length > 1) ? parts[1] : "";
+    }
 }

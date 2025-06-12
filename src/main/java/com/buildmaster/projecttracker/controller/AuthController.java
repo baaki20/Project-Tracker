@@ -10,11 +10,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +27,12 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String googleClientId;
+
+    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
+    private String googleRedirectUri;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
@@ -78,6 +87,21 @@ public class AuthController {
         Map<String, String> resp = new HashMap<>();
         resp.put("message", "Logout successful");
         return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/oauth2/login/google")
+    public ResponseEntity<String> getGoogleAuthUrl() {
+        // Defensive: check for nulls
+        if (googleClientId == null || googleRedirectUri == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Google OAuth2 client ID or redirect URI is not configured.");
+        }
+        String authUrl = "https://accounts.google.com/o/oauth2/v2/auth" +
+                "?client_id=" + URLEncoder.encode(googleClientId, StandardCharsets.UTF_8) +
+                "&redirect_uri=" + URLEncoder.encode(googleRedirectUri, StandardCharsets.UTF_8) +
+                "&response_type=code" +
+                "&scope=" + URLEncoder.encode("email profile", StandardCharsets.UTF_8);
+        return ResponseEntity.ok(authUrl);
     }
 
     @GetMapping("/oauth2/success")

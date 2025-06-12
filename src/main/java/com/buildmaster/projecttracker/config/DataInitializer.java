@@ -4,6 +4,7 @@ import com.buildmaster.projecttracker.entity.*;
 import com.buildmaster.projecttracker.repository.DeveloperRepository;
 import com.buildmaster.projecttracker.repository.ProjectRepository;
 import com.buildmaster.projecttracker.repository.TaskRepository;
+import com.buildmaster.projecttracker.repository.RoleRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @Slf4j
@@ -19,13 +21,16 @@ public class DataInitializer implements CommandLineRunner {
     private final ProjectRepository projectRepository;
     private final DeveloperRepository developerRepository;
     private final TaskRepository taskRepository;
+    private final RoleRepository roleRepository;
 
     public DataInitializer(ProjectRepository projectRepository,
                            DeveloperRepository developerRepository,
-                           TaskRepository taskRepository) {
+                           TaskRepository taskRepository,
+                           RoleRepository roleRepository) {
         this.projectRepository = projectRepository;
         this.developerRepository = developerRepository;
         this.taskRepository = taskRepository;
+        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -37,17 +42,29 @@ public class DataInitializer implements CommandLineRunner {
             projectRepository.deleteAll();
             developerRepository.deleteAll();
 
+            // Ensure ROLE_DEVELOPER exists
+            String defaultRoleName = "ROLE_DEVELOPER";
+            Role developerRole = roleRepository.findByName(defaultRoleName)
+                    .orElseGet(() -> {
+                        Role newRole = new Role();
+                        newRole.setName(defaultRoleName);
+                        return roleRepository.save(newRole);
+                    });
+
             Developer devAlice = Developer.builder()
                     .name("Alice Johnson")
                     .email("alice@example.com")
+                    .roles(Set.of(developerRole))
                     .build();
             Developer devBob = Developer.builder()
                     .name("Bob Smith")
                     .email("bob@example.com")
+                    .roles(Set.of(developerRole))
                     .build();
             Developer devCarol = Developer.builder()
                     .name("Carol Lee")
                     .email("carol@example.com")
+                    .roles(Set.of(developerRole))
                     .build();
 
             List<Developer> savedDevs = developerRepository.saveAll(Arrays.asList(devAlice, devBob, devCarol));

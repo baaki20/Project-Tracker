@@ -21,7 +21,7 @@ import java.util.function.Function;
 @Slf4j
 public class JwtUtil {
 
-    @Value("${app.jwt.secret:mySecretKey}")
+    @Value("${app.jwt.secret:f562dec7a49938e377c82cac7bc6689c9dd9740c4d855c2bf006b8131ae82131}")
     private String jwtSecret;
 
     @Value("${app.jwt.expiration:1800000}") // 30 minutes

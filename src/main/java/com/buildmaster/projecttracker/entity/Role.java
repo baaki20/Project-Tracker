@@ -44,9 +44,30 @@ public class Role {
     @Builder.Default
     private Set<User> users = new HashSet<>();
 
+    public static final String ROLE_ADMIN = "ROLE_ADMIN";
+    public static final String ROLE_MANAGER = "ROLE_MANAGER";
+    public static final String ROLE_DEVELOPER = "ROLE_DEVELOPER";
+    public static final String ROLE_CONTRACTOR = "ROLE_CONTRACTOR";
+
     public Role(String name, String description) {
         this.name = name;
         this.description = description;
+    }
+
+    public static Role adminRole() {
+        return new Role(ROLE_ADMIN, "Administrator role with full permissions");
+    }
+
+    public static Role managerRole() {
+        return new Role(ROLE_MANAGER, "Manager role with project management permissions");
+    }
+
+    public static Role developerRole() {
+        return new Role(ROLE_DEVELOPER, "Developer role with task update permissions");
+    }
+
+    public static Role contractorRole() {
+        return new Role(ROLE_CONTRACTOR, "Contractor role with project summary view permissions");
     }
 
     @PrePersist

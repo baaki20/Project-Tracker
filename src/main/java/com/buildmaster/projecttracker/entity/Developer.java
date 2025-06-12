@@ -9,7 +9,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "developers")
@@ -55,6 +57,15 @@ public class Developer {
     @JsonIgnoreProperties({"developer", "hibernateLazyInitializer", "handler"})
     @Builder.Default
     private List<Task> tasks = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "developer_roles",
+        joinColumns = @JoinColumn(name = "developer_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    @Builder.Default
+    private Set<Role> roles = new HashSet<>();
 
     public Developer(String name, String email, String skills) {
         this.name = name;

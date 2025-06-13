@@ -39,12 +39,13 @@ public class UserService {
         User savedUser = userRepository.save(user);
 
         // Add user to role-specific table
-        if (user.getRole() == Role.CONTRACTOR) {
-            contractorRepository.save(new Contractor(savedUser));
-        } else if (user.getRole() == Role.MANAGER) {
-            managerRepository.save(new com.buildmaster.projecttracker.entity.Manager(savedUser));
-        } else if (user.getRole() == Role.ADMIN) {
-            adminRepository.save(new Admin(savedUser));
+        Role role = Role.valueOf(user.getRole());
+        if (role != null) {
+            switch (role) {
+                case CONTRACTOR -> contractorRepository.save(new Contractor(savedUser));
+                case MANAGER -> managerRepository.save(new com.buildmaster.projecttracker.entity.Manager(savedUser));
+                case ADMIN -> adminRepository.save(new Admin(savedUser));
+            }
         }
 
         return savedUser;

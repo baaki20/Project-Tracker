@@ -30,24 +30,37 @@ public class OAuth2UserServiceImpl extends DefaultOAuth2UserService {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         Map<String, Object> attributes = oAuth2User.getAttributes();
 
-        String email = (String) attributes.get("email");
-        if (email == null) {
-            throw new OAuth2AuthenticationException("Email not found from OAuth2 provider");
+        String email = null;
+        String username = null;
+
+        // Extract email and username from OAuth2 provider
+        if (attributes.containsKey("email")) {
+            email = (String) attributes.get("email");
+        }
+        if (attributes.containsKey("login")) { // GitHub
+            username = (String) attributes.get("login");
+        } else if (attributes.containsKey("name")) { // Google
+            username = (String) attributes.get("name");
         }
 
+        // Check if user exists
         Optional<User> userOptional = userRepository.findByEmail(email);
         User user;
-        if (userOptional.isPresent()) {
-            user = userOptional.get();
-            // Update user info if needed
+        if (userOptional.isEmpty()) {
+            // Create new user with CONTRACTOR role
+            user = new User();
+            user.setEmail(email);
+            user.setUsername(username != null ? username : email);
+            // Fix: set role as Role entity if User.role expects Role
+            com.buildmaster.projecttracker.entity.Role contractorRole = new com.buildmaster.projecttracker.entity.Role();
+            contractorRole.setName("CONTRACTOR");
+            user.setRole(contractorRole);
             user.setProvider(AuthProvider.valueOf(registrationId.toUpperCase()));
             userRepository.save(user);
         } else {
-            // Register new user
-            user = new User();
-            user.setEmail(email);
+            user = userOptional.get();
+            // Update user info if needed
             user.setProvider(AuthProvider.valueOf(registrationId.toUpperCase()));
-            user.setName((String) attributes.getOrDefault("name", email));
             userRepository.save(user);
         }
 

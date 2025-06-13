@@ -8,22 +8,26 @@ import com.buildmaster.projecttracker.repository.UserRepository;
 import com.buildmaster.projecttracker.service.AuditService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
+    private static final Logger logger = LoggerFactory.getLogger(CustomOAuth2UserService.class);
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -43,8 +47,34 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private OAuth2User processOAuth2User(OAuth2UserRequest userRequest, OAuth2User oAuth2User) {
-        String registrationId = userRequest.getClientRegistration().getRegistrationId();
         Map<String, Object> attributes = oAuth2User.getAttributes();
+        logger.info("OAuth2 user attributes: {}", attributes);
+
+        if (attributes == null) {
+            logger.error("OAuth2 attributes map is null!");
+            throw new OAuth2AuthenticationException("OAuth2 attributes map is null");
+        }
+
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+        Object emailObj = attributes.get("email");
+
+        if (emailObj == null && "github".equals(registrationId)) {
+            logger.warn("No email attribute found in OAuth2 user attributes. Provider: {}", registrationId);
+            // Fetch email from GitHub /user/emails endpoint
+            String email = fetchGithubEmail(userRequest.getAccessToken().getTokenValue());
+            if (email != null) {
+                attributes = new HashMap<>(attributes); // make mutable
+                attributes.put("email", email);
+            } else {
+                throw new OAuth2AuthenticationException("Email not found in OAuth2 user attributes or GitHub /user/emails endpoint");
+            }
+        }
+
+        // Example: check for expected attribute (e.g., "email")
+        if (!attributes.containsKey("email")) {
+            logger.warn("OAuth2 user does not contain 'email' attribute. Attributes: {}", attributes);
+            // Optionally, handle fetching email from /user/emails endpoint here
+        }
 
         OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(registrationId, attributes);
 
@@ -130,5 +160,35 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
 
         return username;
+    }
+
+    private String fetchGithubEmail(String accessToken) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<List> response = restTemplate.exchange(
+            "https://api.github.com/user/emails",
+            HttpMethod.GET,
+            entity,
+            List.class
+        );
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            List<Map<String, Object>> emails = response.getBody();
+            if (emails != null) {
+                for (Map<String, Object> mail : emails) {
+                    Boolean primary = (Boolean) mail.get("primary");
+                    Boolean verified = (Boolean) mail.get("verified");
+                    String email = (String) mail.get("email");
+                    if (Boolean.TRUE.equals(primary) && Boolean.TRUE.equals(verified) && email != null) {
+                        return email;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

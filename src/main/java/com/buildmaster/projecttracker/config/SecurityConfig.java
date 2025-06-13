@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -62,14 +63,17 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Remove custom JWT entry point for browser-based login flows
+                // .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(authz -> authz
+                        .requestMatchers("/", "/oauth2/**", "/login").permitAll()
                         // Public endpoints
-                        .requestMatchers("/api/*/auth/register", "/api/*/auth/login", "/oauth2/**").permitAll()
+                        .requestMatchers("/api/*/auth/register", "/api/*/auth/login").permitAll()
                         .requestMatchers("/api/*/auth/logout").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/health", "/api/v1/test").permitAll()
+                        .requestMatchers("/").permitAll() // Allow public access to the home endpoint
 
                         // H2 Console (only for development)
                         .requestMatchers("/h2-console/**").hasRole("ADMIN")
@@ -79,8 +83,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
 
                         // Manager and Admin can create/update projects
-                        .requestMatchers(HttpMethod.POST, "/api/*/projects/**").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/*/projects/**").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/*/projects").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/*/projects").hasAnyRole("MANAGER", "ADMIN")
 
                         // Manager and Admin can create tasks
                         .requestMatchers(HttpMethod.POST, "/api/*/tasks").hasAnyRole("MANAGER", "ADMIN")
@@ -89,12 +93,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/*/projects/*/summary").hasAnyRole("CONTRACTOR", "DEVELOPER", "MANAGER", "ADMIN")
 
                         // All authenticated users can read basic project info
-                        .requestMatchers(HttpMethod.GET, "/api/*/projects/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/*/tasks/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/*/developers/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/*/projects").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/*/tasks").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/*/developers").authenticated()
 
                         // Task updates - handled by method-level security
-                        .requestMatchers(HttpMethod.PUT, "/api/*/tasks/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/*/tasks").authenticated()
 
                         // User profile endpoints
                         .requestMatchers("/api/*/users/me").authenticated()
@@ -103,13 +107,12 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService)
-                        )
-                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                    .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                    .successHandler(oAuth2AuthenticationSuccessHandler)
                 );
 
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        // REMOVE the JWT filter for browser login redirect to work:
+        // http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         // Allow H2 console frames (development only)
         http.headers(headers -> headers.frameOptions().sameOrigin());

@@ -3,7 +3,7 @@ package com.buildmaster.projecttracker.service;
 import com.buildmaster.projecttracker.audit.AuditLog;
 import com.buildmaster.projecttracker.repository.AuditLogRepository;
 import com.buildmaster.projecttracker.entity.Project;
-import com.buildmaster.projecttracker.entity.ProjectStatus;
+import com.buildmaster.projecttracker.enums.ProjectStatus;
 import com.buildmaster.projecttracker.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

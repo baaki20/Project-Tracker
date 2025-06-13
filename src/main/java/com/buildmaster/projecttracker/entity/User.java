@@ -98,6 +98,9 @@ public class User implements UserDetails {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Developer developer;
 
+    @Column(name = "role")
+    private String role;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -201,5 +204,17 @@ public class User implements UserDetails {
         String[] parts = name.trim().split("\\s+", 2);
         this.firstName = parts[0];
         this.lastName = (parts.length > 1) ? parts[1] : "";
+    }
+
+    public void setRole(Role role) {
+        if (role == null) {
+            this.role = null;
+        } else {
+            this.role = role.getName(); // Store the role name as String
+        }
+    }
+
+    public String getRole() {
+        return role;
     }
 }

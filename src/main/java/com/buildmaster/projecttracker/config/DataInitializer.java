@@ -1,6 +1,8 @@
 package com.buildmaster.projecttracker.config;
 
 import com.buildmaster.projecttracker.entity.*;
+import com.buildmaster.projecttracker.enums.ProjectStatus;
+import com.buildmaster.projecttracker.enums.TaskStatus;
 import com.buildmaster.projecttracker.repository.DeveloperRepository;
 import com.buildmaster.projecttracker.repository.ProjectRepository;
 import com.buildmaster.projecttracker.repository.TaskRepository;

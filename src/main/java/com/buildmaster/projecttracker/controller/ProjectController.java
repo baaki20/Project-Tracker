@@ -1,7 +1,7 @@
 package com.buildmaster.projecttracker.controller;
 
 import com.buildmaster.projecttracker.entity.Project;
-import com.buildmaster.projecttracker.entity.ProjectStatus;
+import com.buildmaster.projecttracker.enums.ProjectStatus;
 import com.buildmaster.projecttracker.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

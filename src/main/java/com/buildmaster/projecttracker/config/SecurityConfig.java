@@ -66,38 +66,38 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/oauth2/**").permitAll()
-                        .requestMatchers("/api/auth/logout").permitAll()
+                        .requestMatchers("/api/*/auth/register", "/api/*/auth/login", "/oauth2/**").permitAll()
+                        .requestMatchers("/api/*/auth/logout").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/api/v1/health", "/api/v1/test").permitAll()
 
                         // H2 Console (only for development)
                         .requestMatchers("/h2-console/**").hasRole("ADMIN")
 
                         // Admin-only endpoints
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/*/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
 
                         // Manager and Admin can create/update projects
-                        .requestMatchers(HttpMethod.POST, "/api/projects/**").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/projects/**").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/*/projects/**").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/*/projects/**").hasAnyRole("MANAGER", "ADMIN")
 
                         // Manager and Admin can create tasks
-                        .requestMatchers(HttpMethod.POST, "/api/tasks/**").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/*/tasks").hasAnyRole("MANAGER", "ADMIN")
 
                         // Contractors have read-only access to project summaries
-                        .requestMatchers(HttpMethod.GET, "/api/projects/*/summary").hasAnyRole("CONTRACTOR", "DEVELOPER", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/*/projects/*/summary").hasAnyRole("CONTRACTOR", "DEVELOPER", "MANAGER", "ADMIN")
 
                         // All authenticated users can read basic project info
-                        .requestMatchers(HttpMethod.GET, "/api/projects/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/tasks/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/developers/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/*/projects/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/*/tasks/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/*/developers/**").authenticated()
 
                         // Task updates - handled by method-level security
-                        .requestMatchers(HttpMethod.PUT, "/api/tasks/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/*/tasks/**").authenticated()
 
                         // User profile endpoints
-                        .requestMatchers("/users/me").authenticated()
+                        .requestMatchers("/api/*/users/me").authenticated()
 
                         // All other requests require authentication
                         .anyRequest().authenticated()

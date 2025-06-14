@@ -1,6 +1,5 @@
 package com.buildmaster.projecttracker.security.oauth2;
 
-//import com.buildmaster.projecttracker.entity.AuthProvider;
 import com.buildmaster.projecttracker.entity.Role;
 import com.buildmaster.projecttracker.entity.User;
 import com.buildmaster.projecttracker.enums.AuthProvider;
@@ -40,7 +39,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         try {
             return processOAuth2User(userRequest, oAuth2User);
         } catch (OAuth2AuthenticationException ex) {
-            // Re-throw OAuth2AuthenticationException as-is
             throw ex;
         } catch (Exception ex) {
             log.error("Unexpected error processing OAuth2 user", ex);
@@ -54,14 +52,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Map<String, Object> attributes = new HashMap<>(oAuth2User.getAttributes());
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
 
-        // Enhanced debugging
         log.info("Processing OAuth2 user for provider: {}", registrationId);
         log.debug("OAuth2 user attributes: {}", attributes);
         log.debug("OAuth2 user authorities: {}", oAuth2User.getAuthorities());
 
         String email = extractEmail(userRequest, attributes, registrationId);
 
-        // Debug email extraction result
         log.info("Extracted email: {} for provider: {}", email, registrationId);
 
         if (email == null || email.trim().isEmpty()) {
@@ -72,7 +68,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new OAuth2AuthenticationException(error, error.getDescription());
         }
 
-        // Ensure email is in attributes for later use
         attributes.put("email", email);
 
         Optional<User> userOptional = userRepository.findByEmail(email);
@@ -82,7 +77,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             user = userOptional.get();
             log.info("Found existing user: {} with auth provider: {}", email, user.getAuthProvider());
 
-            // Improved auth provider comparison
             if (!isMatchingAuthProvider(user.getAuthProvider(), registrationId)) {
                 String errorMsg = String.format("Account exists with %s provider. Please use %s to login.",
                         user.getAuthProvider(), user.getAuthProvider());
@@ -108,7 +102,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         } else if ("github".equalsIgnoreCase(registrationId)) {
             email = extractGitHubEmail(userRequest, attributes);
         } else {
-            // Generic provider email extraction
             email = extractGenericEmail(attributes);
         }
 
@@ -127,7 +120,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private String extractGitHubEmail(OAuth2UserRequest userRequest, Map<String, Object> attributes) {
-        // First check if email is directly available in attributes
         Object emailObj = attributes.get("email");
         if (emailObj instanceof String && !((String) emailObj).trim().isEmpty()) {
             String email = ((String) emailObj).trim();
@@ -135,7 +127,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             return email;
         }
 
-        // If no email in attributes, fetch from GitHub API
         log.info("No email in GitHub attributes, fetching from GitHub API");
         String token = userRequest.getAccessToken().getTokenValue();
 
@@ -144,7 +135,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", "Bearer " + token);
             headers.add("Accept", "application/vnd.github.v3+json");
-            headers.add("User-Agent", "ProjectTracker-OAuth"); // GitHub requires User-Agent
+            headers.add("User-Agent", "ProjectTracker-OAuth");
 
             HttpEntity<String> entity = new HttpEntity<>("", headers);
             ResponseEntity<List> response = restTemplate.exchange(
@@ -158,7 +149,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             if (emails != null && !emails.isEmpty()) {
                 log.debug("Retrieved {} emails from GitHub API", emails.size());
 
-                // First try to find primary verified email
                 for (Map<String, Object> mail : emails) {
                     Boolean primary = (Boolean) mail.get("primary");
                     Boolean verified = (Boolean) mail.get("verified");
@@ -171,7 +161,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     }
                 }
 
-                // If no primary verified email, try any verified email
                 for (Map<String, Object> mail : emails) {
                     Boolean verified = (Boolean) mail.get("verified");
                     String emailAddr = (String) mail.get("email");
@@ -182,7 +171,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     }
                 }
 
-                // Last resort: any email
                 for (Map<String, Object> mail : emails) {
                     String emailAddr = (String) mail.get("email");
                     if (emailAddr != null && !emailAddr.trim().isEmpty()) {
@@ -217,7 +205,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String userProviderName = userAuthProvider.name().toLowerCase();
         String registrationIdLower = registrationId.toLowerCase();
 
-        // Handle common provider name variations
         return userProviderName.equals(registrationIdLower) ||
                 userProviderName.startsWith(registrationIdLower) ||
                 registrationIdLower.startsWith(userProviderName);
@@ -226,7 +213,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private User registerNewUser(OAuth2UserRequest userRequest, Map<String, Object> attributes) {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
 
-        // Extract user information based on provider
         UserInfo userInfo = extractUserInfo(registrationId, attributes);
 
         try {
@@ -239,14 +225,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .lastName(userInfo.lastName)
                     .authProvider(authProvider)
                     .providerId(userInfo.providerId)
-                    .emailVerified(true) // OAuth2 emails are typically verified
+                    .emailVerified(true)
                     .enabled(true)
                     .accountNonExpired(true)
                     .accountNonLocked(true)
                     .credentialsNonExpired(true)
                     .build();
 
-            // Assign default role for OAuth2 users
             Role defaultRole = roleRepository.findByName("ROLE_CONTRACTOR")
                     .orElseThrow(() -> new RuntimeException("Default OAuth2 role ROLE_CONTRACTOR not found"));
 
@@ -256,7 +241,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
             User savedUser = userRepository.save(user);
 
-            // Log OAuth2 registration
             auditService.logUserRegistration(savedUser);
 
             log.info("New OAuth2 user registered: {} via {}", savedUser.getEmail(), savedUser.getAuthProvider());
@@ -272,7 +256,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String registrationId = existingUser.getAuthProvider().name().toLowerCase();
         UserInfo userInfo = extractUserInfo(registrationId, attributes);
 
-        // Update user information
         existingUser.setFirstName(userInfo.firstName);
         existingUser.setLastName(userInfo.lastName);
 
@@ -296,7 +279,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             lastName = (String) attributes.get("family_name");
         } else if ("github".equalsIgnoreCase(registrationId)) {
             providerId = String.valueOf(attributes.get("id"));
-            // GitHub does not provide given_name/family_name, so split name if possible
             if (name != null && !name.trim().isEmpty()) {
                 String[] parts = name.trim().split("\\s+", 2);
                 firstName = parts[0];
@@ -305,13 +287,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 }
             }
         } else {
-            // Generic provider
             Object idObj = attributes.get("id");
             providerId = idObj != null ? String.valueOf(idObj) : null;
             firstName = (String) attributes.get("given_name");
             lastName = (String) attributes.get("family_name");
-
-            // If no given_name/family_name, try to split name
             if ((firstName == null || lastName == null) && name != null && !name.trim().isEmpty()) {
                 String[] parts = name.trim().split("\\s+", 2);
                 if (firstName == null) firstName = parts[0];
@@ -332,8 +311,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         } else {
             baseUsername = "user";
         }
-
-        // Ensure minimum username length
         if (baseUsername.length() < 3) {
             baseUsername = "user" + baseUsername;
         }
@@ -348,8 +325,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         return username;
     }
-
-    // Helper class to hold user information
     private static class UserInfo {
         final String providerId;
         final String firstName;

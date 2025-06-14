@@ -51,7 +51,6 @@ public class AuthController {
         try {
             AuthResponse authResponse = authService.login(request);
 
-            // Set JWT as HttpOnly cookie using CookieUtils
             CookieUtils.addCookie(response, "jwt", authResponse.getAccessToken(), 24 * 60 * 60);
 
             return ResponseEntity.ok(authResponse);
@@ -107,8 +106,6 @@ public class AuthController {
 
     @GetMapping("/oauth2/success")
     public ResponseEntity<AuthResponse> oauth2LoginSuccess(@RequestParam String token) {
-        // This endpoint is called after successful OAuth2 authentication
-        // The token is generated in OAuth2AuthenticationSuccessHandler
         AuthResponse response = AuthResponse.builder()
                 .accessToken(token)
                 .tokenType("Bearer")

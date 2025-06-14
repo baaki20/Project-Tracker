@@ -58,8 +58,8 @@ public class AuditLog {
      */
     @ElementCollection
     @CollectionTable(name = "audit_log_payload", joinColumns = @JoinColumn(name = "audit_log_id"))
-    @MapKeyColumn(name = "property_key", length = 255) // Added length for property_key for consistency
-    @Column(name = "property_value", length = 1000, columnDefinition = "TEXT") // Explicitly define as TEXT
+    @MapKeyColumn(name = "property_key", length = 255)
+    @Column(name = "property_value", length = 1000, columnDefinition = "TEXT")
     private Map<String, String> payload;
 
     public AuditLog(String actionType, String entityType, String entityId, String userId, Map<String, String> payload) {

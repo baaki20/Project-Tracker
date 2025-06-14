@@ -67,10 +67,8 @@ public class TaskService {
 
         task.setDeveloper(developer);
         Task savedTask = taskRepository.save(task);
-
-        // Create audit log with String-based payload
         Map<String, String> payload = createTaskStringPayload(savedTask);
-        payload.put("assignedDeveloper", developer.getName()); // Add assigned developer name to payload
+        payload.put("assignedDeveloper", developer.getName());
         auditLogRepository.save(new AuditLog("UPDATE", "Task",
                 taskId.toString(), "system", payload));
 
@@ -83,8 +81,6 @@ public class TaskService {
     public Task save(Task task) {
         boolean isNew = task.getId() == null;
         Task savedTask = taskRepository.save(task);
-
-        // Create audit log with String-based payload
         Map<String, String> payload = createTaskStringPayload(savedTask);
         String actionType = isNew ? "CREATE" : "UPDATE";
         auditLogRepository.save(new AuditLog(actionType, "Task",
@@ -100,8 +96,6 @@ public class TaskService {
         Optional<Task> task = taskRepository.findById(id);
         if (task.isPresent()) {
             taskRepository.deleteById(id);
-
-            // Create audit log with String-based payload
             Map<String, String> payload = createTaskStringPayload(task.get());
             auditLogRepository.save(new AuditLog("DELETE", "Task",
                     id.toString(), "system", payload));
@@ -127,10 +121,10 @@ public class TaskService {
         payload.put("id", task.getId() != null ? task.getId().toString() : null);
         payload.put("title", task.getTitle());
         payload.put("description", task.getDescription());
-        payload.put("status", task.getStatus() != null ? task.getStatus().toString() : null); // Convert Enum to String
-        payload.put("dueDate", task.getDueDate() != null ? task.getDueDate().toString() : null); // Convert LocalDate to String
-        payload.put("startDate", task.getStartDate() != null ? task.getStartDate().toString() : null); // Convert LocalDate to String
-        payload.put("endDate", task.getEndDate() != null ? task.getEndDate().toString() : null); // Convert LocalDate to String
+        payload.put("status", task.getStatus() != null ? task.getStatus().toString() : null);
+        payload.put("dueDate", task.getDueDate() != null ? task.getDueDate().toString() : null);
+        payload.put("startDate", task.getStartDate() != null ? task.getStartDate().toString() : null);
+        payload.put("endDate", task.getEndDate() != null ? task.getEndDate().toString() : null);
 
         if (task.getProject() != null) {
             payload.put("projectId", task.getProject().getId() != null ? task.getProject().getId().toString() : null);

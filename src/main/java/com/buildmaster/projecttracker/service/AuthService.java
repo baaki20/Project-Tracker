@@ -94,22 +94,15 @@ public class AuthService {
             );
 
             User user = (User) authentication.getPrincipal();
-
-            // Update last login
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
-
-            // Generate JWT tokens
             String accessToken = jwtUtil.generateToken(authentication);
             String refreshToken = jwtUtil.generateRefreshToken(user.getUsername());
-
-            // Log successful login
             auditService.logUserLogin(user, true);
 
             return buildAuthResponse(accessToken, refreshToken, user);
 
         } catch (BadCredentialsException e) {
-            // Log failed login attempt
             userRepository.findByUsernameOrEmail(request.getUsernameOrEmail(), request.getUsernameOrEmail())
                     .ifPresent(user -> auditService.logUserLogin(user, false));
 

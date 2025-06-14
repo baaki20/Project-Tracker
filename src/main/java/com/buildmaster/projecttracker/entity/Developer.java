@@ -47,7 +47,6 @@ public class Developer {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Optional relationship to User entity
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id")
     @JsonIgnoreProperties({"developer", "password", "roles"})
@@ -99,12 +98,10 @@ public class Developer {
         }
     }
 
-    // Helper method to get user ID if user is linked
     public Long getUserId() {
         return user != null ? user.getId() : null;
     }
 
-    // Helper method to check if developer has authentication
     public boolean hasUser() {
         return user != null;
     }

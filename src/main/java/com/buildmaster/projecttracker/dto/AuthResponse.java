@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
-// Auth Response DTO
 @Data
 @Builder
 @NoArgsConstructor

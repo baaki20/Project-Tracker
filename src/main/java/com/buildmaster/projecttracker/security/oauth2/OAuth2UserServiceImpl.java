@@ -33,25 +33,21 @@ public class OAuth2UserServiceImpl extends DefaultOAuth2UserService {
         String email = null;
         String username = null;
 
-        // Extract email and username from OAuth2 provider
         if (attributes.containsKey("email")) {
             email = (String) attributes.get("email");
         }
-        if (attributes.containsKey("login")) { // GitHub
+        if (attributes.containsKey("login")) {
             username = (String) attributes.get("login");
-        } else if (attributes.containsKey("name")) { // Google
+        } else if (attributes.containsKey("name")) {
             username = (String) attributes.get("name");
         }
 
-        // Check if user exists
         Optional<User> userOptional = userRepository.findByEmail(email);
         User user;
         if (userOptional.isEmpty()) {
-            // Create new user with CONTRACTOR role
             user = new User();
             user.setEmail(email);
             user.setUsername(username != null ? username : email);
-            // Fix: set role as Role entity if User.role expects Role
             com.buildmaster.projecttracker.entity.Role contractorRole = new com.buildmaster.projecttracker.entity.Role();
             contractorRole.setName("CONTRACTOR");
             user.setRole(contractorRole);
@@ -59,12 +55,10 @@ public class OAuth2UserServiceImpl extends DefaultOAuth2UserService {
             userRepository.save(user);
         } else {
             user = userOptional.get();
-            // Update user info if needed
             user.setProvider(AuthProvider.valueOf(registrationId.toUpperCase()));
             userRepository.save(user);
         }
 
-        // Optionally, return a custom OAuth2User implementation
         return oAuth2User;
     }
 }

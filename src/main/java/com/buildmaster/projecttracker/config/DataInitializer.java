@@ -48,14 +48,12 @@ public class DataInitializer implements CommandLineRunner {
             projectRepository.deleteAll();
             developerRepository.deleteAll();
 
-            // Ensure all required roles exist
             List<String> requiredRoles = Arrays.asList(
                     "ROLE_ADMIN",
                     "ROLE_MANAGER",
                     "ROLE_DEVELOPER",
                     "ROLE_CONTRACTOR"
             );
-            // In the run method, replace the role creation loop with this:
             List<Role> savedRoles = new ArrayList<>();
             for (String roleName : requiredRoles) {
                 Role role = roleRepository.findByName(roleName)
@@ -72,20 +70,18 @@ public class DataInitializer implements CommandLineRunner {
                 .map(Role::getName)
                 .collect(Collectors.toList()));
 
-            // After creating the roles, add an admin user
             Role adminRole = roleRepository.findByName("ROLE_ADMIN")
                     .orElseThrow(() -> new IllegalStateException("ROLE_ADMIN should exist"));
 
             Developer adminUser = Developer.builder()
                     .name("System Admin")
                     .email("admin@system.com")
-                    .roles(Set.of(adminRole))  // Set admin role instead of developer role
+                    .roles(Set.of(adminRole))
                     .build();
 
             developerRepository.save(adminUser);
             log.info("Created admin user");
 
-            // Use the developer role for sample developers
             String defaultRoleName = "ROLE_DEVELOPER";
             Role developerRole = roleRepository.findByName(defaultRoleName)
                     .orElseThrow(() -> new IllegalStateException("ROLE_DEVELOPER should exist"));

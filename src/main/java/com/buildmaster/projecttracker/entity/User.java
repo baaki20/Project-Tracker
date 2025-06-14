@@ -95,7 +95,6 @@ public class User implements UserDetails {
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
-    // Optional: Link to Developer entity if user is a developer
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Developer developer;
 
@@ -113,7 +112,6 @@ public class User implements UserDetails {
         updatedAt = LocalDateTime.now();
     }
 
-    // UserDetails implementation
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -156,7 +154,6 @@ public class User implements UserDetails {
         return enabled;
     }
 
-    // Helper methods
     public String getFullName() {
         return firstName + " " + lastName;
     }
@@ -190,12 +187,10 @@ public class User implements UserDetails {
         return false;
     }
 
-    // Add this setter for compatibility with setProvider usage
     public void setProvider(AuthProvider provider) {
         this.authProvider = provider;
     }
 
-    // Add this setter for compatibility with setName usage in OAuth2UserServiceImpl
     public void setName(String name) {
         if (name == null || name.isBlank()) {
             this.firstName = "";
@@ -211,7 +206,7 @@ public class User implements UserDetails {
         if (role == null) {
             this.role = null;
         } else {
-            this.role = role.getName(); // Store the role name as String
+            this.role = role.getName();
         }
     }
 

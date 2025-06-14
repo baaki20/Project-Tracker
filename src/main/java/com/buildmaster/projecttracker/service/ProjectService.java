@@ -47,8 +47,6 @@ public class ProjectService {
     public Project save(Project project) {
         boolean isNew = project.getId() == null;
         Project savedProject = projectRepository.save(project);
-
-        // Create audit log with String-based payload
         Map<String, String> payload = createProjectStringPayload(savedProject);
         String actionType = isNew ? "CREATE" : "UPDATE";
         auditLogRepository.save(new AuditLog(actionType, "Project",
@@ -64,8 +62,6 @@ public class ProjectService {
         Optional<Project> project = projectRepository.findById(id);
         if (project.isPresent()) {
             projectRepository.deleteById(id);
-
-            // Create audit log with String-based payload
             Map<String, String> payload = createProjectStringPayload(project.get());
             auditLogRepository.save(new AuditLog("DELETE", "Project",
                     id.toString(), "system", payload));
@@ -103,10 +99,9 @@ public class ProjectService {
         payload.put("id", project.getId() != null ? project.getId().toString() : null);
         payload.put("name", project.getName());
         payload.put("description", project.getDescription());
-        payload.put("deadline", project.getDeadline() != null ? project.getDeadline().toString() : null); // Convert LocalDate to String
-        payload.put("status", project.getStatus() != null ? project.getStatus().toString() : null); // Convert Enum to String
-        payload.put("taskCount", String.valueOf(project.getTasks().size())); // Convert int to String
-        // Add other project properties as needed, converting to String
+        payload.put("deadline", project.getDeadline() != null ? project.getDeadline().toString() : null);
+        payload.put("status", project.getStatus() != null ? project.getStatus().toString() : null);
+        payload.put("taskCount", String.valueOf(project.getTasks().size()));
         return payload;
     }
 }

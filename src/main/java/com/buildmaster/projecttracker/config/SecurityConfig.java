@@ -39,10 +39,7 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
-    private final @Lazy JwtAuthenticationFilter jwtAuthFilter; // @Lazy is fine here for filter chain order
-
-    // Removed: private final @Lazy AuthenticationProvider authenticaticationProvider;
-    // The AuthenticationProvider bean will be automatically discovered by AuthenticationManager
+    private final @Lazy JwtAuthenticationFilter jwtAuthFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -51,7 +48,6 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        // This bean provides the default authentication logic using UserDetailsService and PasswordEncoder
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
@@ -60,9 +56,7 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        // The AuthenticationManager will automatically discover all registered AuthenticationProvider beans
-        // (like DaoAuthenticationProvider and OAuth2UserService)
-        return config.getAuthenticationManager();
+         return config.getAuthenticationManager();
     }
 
     @Bean
@@ -71,7 +65,6 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        // Publicly accessible endpoints
                         .requestMatchers("/", "/oauth2/**", "/login").permitAll()
                         .requestMatchers("/api/*/auth/register", "/api/*/auth/login").permitAll()
                         .requestMatchers("/api/*/auth/logout").permitAll()
@@ -79,7 +72,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/health", "/api/v1/test").permitAll()
                         .requestMatchers("/").permitAll()
 
-                        // Role-based authorization
                         .requestMatchers("/api/*/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/*/projects").hasAnyRole("MANAGER", "ADMIN")
@@ -100,7 +92,7 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(
-                                authorization -> authorization.baseUri("/oauth2/authorize") // Custom base URI for OAuth2 authorization
+                                authorization -> authorization.baseUri("/oauth2/authorize")
                         )
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
@@ -119,7 +111,7 @@ public class SecurityConfig {
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Apply CORS to all paths
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 }

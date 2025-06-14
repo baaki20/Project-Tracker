@@ -84,7 +84,7 @@ public class JwtUtil {
                 .setSubject(subject)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512) // Correct: Use signWith() for building/signing the JWT
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
 

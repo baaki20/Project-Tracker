@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
-// Register Request DTO
 @Data
 @Builder
 @NoArgsConstructor

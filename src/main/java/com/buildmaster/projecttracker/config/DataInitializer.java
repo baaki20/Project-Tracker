@@ -1,31 +1,42 @@
 package com.buildmaster.projecttracker.config;
 
 import com.buildmaster.projecttracker.entity.*;
+import com.buildmaster.projecttracker.enums.ProjectStatus;
+import com.buildmaster.projecttracker.enums.TaskStatus;
 import com.buildmaster.projecttracker.repository.DeveloperRepository;
 import com.buildmaster.projecttracker.repository.ProjectRepository;
 import com.buildmaster.projecttracker.repository.TaskRepository;
+import com.buildmaster.projecttracker.repository.RoleRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
+@Transactional
 public class DataInitializer implements CommandLineRunner {
 
     private final ProjectRepository projectRepository;
     private final DeveloperRepository developerRepository;
     private final TaskRepository taskRepository;
+    private final RoleRepository roleRepository;
 
     public DataInitializer(ProjectRepository projectRepository,
                            DeveloperRepository developerRepository,
-                           TaskRepository taskRepository) {
+                           TaskRepository taskRepository,
+                           RoleRepository roleRepository) {
         this.projectRepository = projectRepository;
         this.developerRepository = developerRepository;
         this.taskRepository = taskRepository;
+        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -37,17 +48,62 @@ public class DataInitializer implements CommandLineRunner {
             projectRepository.deleteAll();
             developerRepository.deleteAll();
 
+            // Ensure all required roles exist
+            List<String> requiredRoles = Arrays.asList(
+                    "ROLE_ADMIN",
+                    "ROLE_MANAGER",
+                    "ROLE_DEVELOPER",
+                    "ROLE_CONTRACTOR"
+            );
+            // In the run method, replace the role creation loop with this:
+            List<Role> savedRoles = new ArrayList<>();
+            for (String roleName : requiredRoles) {
+                Role role = roleRepository.findByName(roleName)
+                        .orElse(null);
+                if (role == null) {
+                    role = new Role();
+                    role.setName(roleName);
+                    role = roleRepository.save(role);
+                    log.info("Created new role: {}", roleName);
+                }
+                savedRoles.add(role);
+            }
+            log.info("Verified roles exist: {}", savedRoles.stream()
+                .map(Role::getName)
+                .collect(Collectors.toList()));
+
+            // After creating the roles, add an admin user
+            Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                    .orElseThrow(() -> new IllegalStateException("ROLE_ADMIN should exist"));
+
+            Developer adminUser = Developer.builder()
+                    .name("System Admin")
+                    .email("admin@system.com")
+                    .roles(Set.of(adminRole))  // Set admin role instead of developer role
+                    .build();
+
+            developerRepository.save(adminUser);
+            log.info("Created admin user");
+
+            // Use the developer role for sample developers
+            String defaultRoleName = "ROLE_DEVELOPER";
+            Role developerRole = roleRepository.findByName(defaultRoleName)
+                    .orElseThrow(() -> new IllegalStateException("ROLE_DEVELOPER should exist"));
+
             Developer devAlice = Developer.builder()
                     .name("Alice Johnson")
                     .email("alice@example.com")
+                    .roles(Set.of(developerRole))
                     .build();
             Developer devBob = Developer.builder()
                     .name("Bob Smith")
                     .email("bob@example.com")
+                    .roles(Set.of(developerRole))
                     .build();
             Developer devCarol = Developer.builder()
                     .name("Carol Lee")
                     .email("carol@example.com")
+                    .roles(Set.of(developerRole))
                     .build();
 
             List<Developer> savedDevs = developerRepository.saveAll(Arrays.asList(devAlice, devBob, devCarol));
@@ -116,5 +172,9 @@ public class DataInitializer implements CommandLineRunner {
             log.error("Error during data initialization: ", e);
             throw new RuntimeException("Failed to initialize data", e);
         }
+
+        roleRepository.findAll().forEach(role -> {
+            log.info("Verifying role in database: {}", role.getName());
+        });
     }
 }

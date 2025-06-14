@@ -1,9 +1,9 @@
 package com.buildmaster.projecttracker.service;
 
 import com.buildmaster.projecttracker.audit.AuditLog;
-import com.buildmaster.projecttracker.audit.AuditLogRepository;
+import com.buildmaster.projecttracker.repository.AuditLogRepository;
 import com.buildmaster.projecttracker.entity.Project;
-import com.buildmaster.projecttracker.entity.ProjectStatus;
+import com.buildmaster.projecttracker.enums.ProjectStatus;
 import com.buildmaster.projecttracker.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,8 +48,8 @@ public class ProjectService {
         boolean isNew = project.getId() == null;
         Project savedProject = projectRepository.save(project);
 
-        // Create audit log
-        Map<String, Object> payload = createProjectPayload(savedProject);
+        // Create audit log with String-based payload
+        Map<String, String> payload = createProjectStringPayload(savedProject);
         String actionType = isNew ? "CREATE" : "UPDATE";
         auditLogRepository.save(new AuditLog(actionType, "Project",
                 savedProject.getId().toString(), "system", payload));
@@ -65,8 +65,8 @@ public class ProjectService {
         if (project.isPresent()) {
             projectRepository.deleteById(id);
 
-            // Create audit log
-            Map<String, Object> payload = createProjectPayload(project.get());
+            // Create audit log with String-based payload
+            Map<String, String> payload = createProjectStringPayload(project.get());
             auditLogRepository.save(new AuditLog("DELETE", "Project",
                     id.toString(), "system", payload));
 
@@ -91,14 +91,22 @@ public class ProjectService {
         return save(project);
     }
 
-    private Map<String, Object> createProjectPayload(Project project) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("id", project.getId());
+    /**
+     * Creates a payload map for AuditLog, ensuring all values are strings.
+     * This method is crucial for compatibility with AuditLog's Map<String, String> payload.
+     * Converts various object types to String for consistent audit logging.
+     * @param project The Project object from which to create the payload.
+     * @return A Map<String, String> representing the project's data.
+     */
+    private Map<String, String> createProjectStringPayload(Project project) {
+        Map<String, String> payload = new HashMap<>();
+        payload.put("id", project.getId() != null ? project.getId().toString() : null);
         payload.put("name", project.getName());
         payload.put("description", project.getDescription());
-        payload.put("deadline", project.getDeadline());
-        payload.put("status", project.getStatus());
-        payload.put("taskCount", project.getTasks().size());
+        payload.put("deadline", project.getDeadline() != null ? project.getDeadline().toString() : null); // Convert LocalDate to String
+        payload.put("status", project.getStatus() != null ? project.getStatus().toString() : null); // Convert Enum to String
+        payload.put("taskCount", String.valueOf(project.getTasks().size())); // Convert int to String
+        // Add other project properties as needed, converting to String
         return payload;
     }
 }

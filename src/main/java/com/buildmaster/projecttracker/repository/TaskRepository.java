@@ -1,7 +1,7 @@
 package com.buildmaster.projecttracker.repository;
 
 import com.buildmaster.projecttracker.entity.Task;
-import com.buildmaster.projecttracker.entity.TaskStatus;
+import com.buildmaster.projecttracker.enums.TaskStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

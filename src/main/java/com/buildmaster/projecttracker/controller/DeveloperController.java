@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/developers")
+@RequestMapping("/api/v1/developers")
 @RequiredArgsConstructor
 public class DeveloperController {
 

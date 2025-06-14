@@ -9,7 +9,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "developers")
@@ -17,8 +19,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"tasks"})
-@ToString(exclude = {"tasks"})
+@EqualsAndHashCode(exclude = {"tasks", "user"})
+@ToString(exclude = {"tasks", "user"})
 public class Developer {
 
     @Id
@@ -45,10 +47,25 @@ public class Developer {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Optional relationship to User entity
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"developer", "password", "roles"})
+    private User user;
+
     @OneToMany(mappedBy = "developer", cascade = CascadeType.ALL)
     @JsonIgnoreProperties({"developer", "hibernateLazyInitializer", "handler"})
     @Builder.Default
     private List<Task> tasks = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "developer_roles",
+        joinColumns = @JoinColumn(name = "developer_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    @Builder.Default
+    private Set<Role> roles = new HashSet<>();
 
     public Developer(String name, String email, String skills) {
         this.name = name;
@@ -80,5 +97,15 @@ public class Developer {
             tasks.remove(task);
             task.setDeveloper(null);
         }
+    }
+
+    // Helper method to get user ID if user is linked
+    public Long getUserId() {
+        return user != null ? user.getId() : null;
+    }
+
+    // Helper method to check if developer has authentication
+    public boolean hasUser() {
+        return user != null;
     }
 }

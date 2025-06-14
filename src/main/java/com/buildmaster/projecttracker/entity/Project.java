@@ -1,5 +1,6 @@
 package com.buildmaster.projecttracker.entity;
 
+import com.buildmaster.projecttracker.enums.ProjectStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -20,7 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/tasks")
+@RequestMapping("/api/v1/tasks")
 @RequiredArgsConstructor
 @Slf4j
 public class TaskController {
@@ -93,6 +94,7 @@ public class TaskController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER', 'DEVELOPER')")
     @PostMapping
     public ResponseEntity<?> createTask(@Valid @RequestBody Task task) {
         try {
@@ -106,6 +108,7 @@ public class TaskController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER', 'DEVELOPER')")
     @PutMapping("/{id}")
     public ResponseEntity<?> updateTask(@PathVariable Long id, @Valid @RequestBody Task task) {
         try {

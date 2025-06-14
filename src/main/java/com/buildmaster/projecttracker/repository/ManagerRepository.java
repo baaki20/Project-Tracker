@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ManagerRepository extends JpaRepository<Manager, Long> {
     Manager findByUserId(Long userId);
+
+    void deleteByUserId(Long id);
 }

@@ -1,6 +1,6 @@
 package com.buildmaster.projecttracker.security.oauth2;
 
-import com.buildmaster.projecttracker.entity.AuthProvider;
+import com.buildmaster.projecttracker.enums.AuthProvider;
 import com.buildmaster.projecttracker.entity.User;
 import com.buildmaster.projecttracker.repository.UserRepository;
 import com.buildmaster.projecttracker.service.AuthService;

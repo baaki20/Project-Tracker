@@ -7,6 +7,7 @@ import com.buildmaster.projecttracker.security.oauth2.OAuth2AuthenticationSucces
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -36,10 +37,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
-    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final @Lazy JwtAuthenticationFilter jwtAuthFilter; // @Lazy is fine here for filter chain order
+
+    // Removed: private final @Lazy AuthenticationProvider authenticaticationProvider;
+    // The AuthenticationProvider bean will be automatically discovered by AuthenticationManager
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -48,6 +51,7 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
+        // This bean provides the default authentication logic using UserDetailsService and PasswordEncoder
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
@@ -56,6 +60,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        // The AuthenticationManager will automatically discover all registered AuthenticationProvider beans
+        // (like DaoAuthenticationProvider and OAuth2UserService)
         return config.getAuthenticationManager();
     }
 
@@ -63,60 +69,43 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                // Remove custom JWT entry point for browser-based login flows
-                // .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
+                        // Publicly accessible endpoints
                         .requestMatchers("/", "/oauth2/**", "/login").permitAll()
-                        // Public endpoints
                         .requestMatchers("/api/*/auth/register", "/api/*/auth/login").permitAll()
                         .requestMatchers("/api/*/auth/logout").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/health", "/api/v1/test").permitAll()
-                        .requestMatchers("/").permitAll() // Allow public access to the home endpoint
+                        .requestMatchers("/").permitAll()
 
-                        // H2 Console (only for development)
-                        .requestMatchers("/h2-console/**").hasRole("ADMIN")
-
-                        // Admin-only endpoints
+                        // Role-based authorization
                         .requestMatchers("/api/*/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
-
-                        // Manager and Admin can create/update projects
                         .requestMatchers(HttpMethod.POST, "/api/*/projects").hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/*/projects").hasAnyRole("MANAGER", "ADMIN")
-
-                        // Manager and Admin can create tasks
-                        .requestMatchers(HttpMethod.POST, "/api/*/tasks").hasAnyRole("MANAGER", "ADMIN")
-
-                        // Contractors have read-only access to project summaries
                         .requestMatchers(HttpMethod.GET, "/api/*/projects/*/summary").hasAnyRole("CONTRACTOR", "DEVELOPER", "MANAGER", "ADMIN")
+                        .requestMatchers("/api/*/users/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/*/tasks").hasRole("DEVELOPER")
+                        .requestMatchers(HttpMethod.PUT, "/api/*/tasks").hasRole("DEVELOPER")
 
-                        // All authenticated users can read basic project info
                         .requestMatchers(HttpMethod.GET, "/api/*/projects").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/*/tasks").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/*/developers").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/*/tasks/*").authenticated()
+                        .requestMatchers("/api/*/users/").authenticated()
 
-                        // Task updates - handled by method-level security
-                        .requestMatchers(HttpMethod.PUT, "/api/*/tasks").authenticated()
-
-                        // User profile endpoints
-                        .requestMatchers("/api/*/users/me").authenticated()
-
-                        // All other requests require authentication
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(oauth2 -> oauth2
-                    .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                    .successHandler(oAuth2AuthenticationSuccessHandler)
-                );
-
-        // REMOVE the JWT filter for browser login redirect to work:
-        // http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-        // Allow H2 console frames (development only)
-        http.headers(headers -> headers.frameOptions().sameOrigin());
-
+                        .authorizationEndpoint(
+                                authorization -> authorization.baseUri("/oauth2/authorize") // Custom base URI for OAuth2 authorization
+                        )
+                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                )
+        ;
         return http.build();
     }
 
@@ -130,7 +119,7 @@ public class SecurityConfig {
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", configuration); // Apply CORS to all paths
         return source;
     }
 }

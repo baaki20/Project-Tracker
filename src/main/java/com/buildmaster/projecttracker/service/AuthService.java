@@ -3,7 +3,7 @@ package com.buildmaster.projecttracker.service;
 import com.buildmaster.projecttracker.dto.AuthResponse;
 import com.buildmaster.projecttracker.dto.LoginRequest;
 import com.buildmaster.projecttracker.dto.RegisterRequest;
-import com.buildmaster.projecttracker.entity.AuthProvider;
+import com.buildmaster.projecttracker.enums.AuthProvider;
 import com.buildmaster.projecttracker.entity.Role;
 import com.buildmaster.projecttracker.entity.User;
 import com.buildmaster.projecttracker.repository.RoleRepository;
@@ -11,6 +11,7 @@ import com.buildmaster.projecttracker.repository.UserRepository;
 import com.buildmaster.projecttracker.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -38,16 +39,13 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        // Check if user already exists
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username is already taken!");
         }
-
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email is already in use!");
         }
 
-        // Create new user
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -62,18 +60,14 @@ public class AuthService {
                 .credentialsNonExpired(true)
                 .build();
 
-        // Assign default roles
         Set<Role> userRoles = new HashSet<>();
-
         if (request.getRoles() != null && !request.getRoles().isEmpty()) {
-            // Admin can assign specific roles during registration
             for (String roleName : request.getRoles()) {
                 Role role = roleRepository.findByName("ROLE_" + roleName.toUpperCase())
                         .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
                 userRoles.add(role);
             }
         } else {
-            // Default role for new registrations
             Role defaultRole = roleRepository.findByName("ROLE_DEVELOPER")
                     .orElseThrow(() -> new RuntimeException("Default role ROLE_DEVELOPER not found"));
             userRoles.add(defaultRole);
@@ -82,13 +76,10 @@ public class AuthService {
         user.setRoles(userRoles);
         User savedUser = userRepository.save(user);
 
-        // Generate JWT tokens
         String accessToken = jwtUtil.generateToken(savedUser.getUsername());
         String refreshToken = jwtUtil.generateRefreshToken(savedUser.getUsername());
 
-        // Log registration
         auditService.logUserRegistration(savedUser);
-
         return buildAuthResponse(accessToken, refreshToken, savedUser);
     }
 
@@ -143,9 +134,7 @@ public class AuthService {
     }
 
     @Transactional
-    public User createOAuth2User(String email, String firstName, String lastName,
-                                 String username, AuthProvider authProvider, String providerId) {
-
+    public User createOAuth2User(String email, String firstName, String lastName, String username, AuthProvider authProvider, String providerId) {
         User user = User.builder()
                 .username(username)
                 .email(email)
@@ -153,14 +142,13 @@ public class AuthService {
                 .lastName(lastName)
                 .authProvider(authProvider)
                 .providerId(providerId)
-                .emailVerified(true) // OAuth2 emails are typically verified
+                .emailVerified(true)
                 .enabled(true)
                 .accountNonExpired(true)
                 .accountNonLocked(true)
                 .credentialsNonExpired(true)
                 .build();
 
-        // Assign default role for OAuth2 users
         Role defaultRole = roleRepository.findByName("ROLE_CONTRACTOR")
                 .orElseThrow(() -> new RuntimeException("Default OAuth2 role ROLE_CONTRACTOR not found"));
 
@@ -169,10 +157,7 @@ public class AuthService {
         user.setRoles(roles);
 
         User savedUser = userRepository.save(user);
-
-        // Log OAuth2 registration
         auditService.logUserRegistration(savedUser);
-
         return savedUser;
     }
 
@@ -197,7 +182,7 @@ public class AuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .expiresIn(1800L) // 30 minutes in seconds
+                .expiresIn(1800L)
                 .user(userInfo)
                 .build();
     }

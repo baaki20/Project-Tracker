@@ -1,6 +1,6 @@
 package com.buildmaster.projecttracker.dto;
 
-import com.buildmaster.projecttracker.entity.AuthProvider;
+import com.buildmaster.projecttracker.enums.AuthProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

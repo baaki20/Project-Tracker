@@ -1,6 +1,5 @@
 package com.buildmaster.projecttracker.dto;
 
-import com.buildmaster.projecttracker.entity.AuthProvider;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

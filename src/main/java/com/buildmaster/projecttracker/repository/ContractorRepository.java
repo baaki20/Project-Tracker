@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ContractorRepository extends JpaRepository<Contractor, Long> {
     Contractor findByUserId(Long userId);
+
+    void deleteByUserId(Long id);
 }

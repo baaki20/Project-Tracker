@@ -83,6 +83,7 @@ public class AuthController {
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         // Use deleteCookie for JWT
         CookieUtils.deleteCookie(request, response, "jwt");
+        CookieUtils.deleteCookie(request, response, "JSESSIONID");
 
         Map<String, String> resp = new HashMap<>();
         resp.put("message", "Logout successful");

@@ -1,5 +1,6 @@
 package com.buildmaster.projecttracker.entity;
 
+import com.buildmaster.projecttracker.enums.AuthProvider;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;

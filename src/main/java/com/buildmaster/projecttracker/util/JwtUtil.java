@@ -14,9 +14,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-// Ensure this import is present, though it's often implicit
-// import io.jsonwebtoken.Jwts; // Already present in your file
-
 @Component
 @Slf4j
 public class JwtUtil {

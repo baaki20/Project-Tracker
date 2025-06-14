@@ -1,4 +1,4 @@
-package com.buildmaster.projecttracker.entity;
+package com.buildmaster.projecttracker.enums;
 
 public enum AuthProvider {
     LOCAL,

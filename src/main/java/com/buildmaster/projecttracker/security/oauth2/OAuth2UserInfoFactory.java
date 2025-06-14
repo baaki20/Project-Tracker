@@ -1,6 +1,6 @@
 package com.buildmaster.projecttracker.security.oauth2;
 
-import com.buildmaster.projecttracker.entity.AuthProvider;
+import com.buildmaster.projecttracker.enums.AuthProvider;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
 import java.util.Map;

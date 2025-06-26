@@ -105,4 +105,8 @@ public class Developer {
     public boolean hasUser() {
         return user != null;
     }
+
+    public Object getUsername() {
+        return user != null ? user.getUsername() : null;
+    }
 }

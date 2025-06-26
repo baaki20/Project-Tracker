@@ -80,7 +80,7 @@ public class AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(savedUser.getUsername());
 
         auditService.logUserRegistration(savedUser);
-        return buildAuthResponse(accessToken, refreshToken, savedUser);
+        return buildAuthResponse(accessToken, refreshToken);
     }
 
     @Transactional
@@ -100,7 +100,7 @@ public class AuthService {
             String refreshToken = jwtUtil.generateRefreshToken(user.getUsername());
             auditService.logUserLogin(user, true);
 
-            return buildAuthResponse(accessToken, refreshToken, user);
+            return buildAuthResponse(accessToken, refreshToken);
 
         } catch (BadCredentialsException e) {
             userRepository.findByUsernameOrEmail(request.getUsernameOrEmail(), request.getUsernameOrEmail())
@@ -123,60 +123,16 @@ public class AuthService {
         String newAccessToken = jwtUtil.generateToken(username);
         String newRefreshToken = jwtUtil.generateRefreshToken(username);
 
-        return buildAuthResponse(newAccessToken, newRefreshToken, user);
+        return buildAuthResponse(newAccessToken, newRefreshToken);
     }
 
-    @Transactional
-    public User createOAuth2User(String email, String firstName, String lastName, String username, AuthProvider authProvider, String providerId) {
-        User user = User.builder()
-                .username(username)
-                .email(email)
-                .firstName(firstName)
-                .lastName(lastName)
-                .authProvider(authProvider)
-                .providerId(providerId)
-                .emailVerified(true)
-                .enabled(true)
-                .accountNonExpired(true)
-                .accountNonLocked(true)
-                .credentialsNonExpired(true)
-                .build();
-
-        Role defaultRole = roleRepository.findByName("ROLE_CONTRACTOR")
-                .orElseThrow(() -> new RuntimeException("Default OAuth2 role ROLE_CONTRACTOR not found"));
-
-        Set<Role> roles = new HashSet<>();
-        roles.add(defaultRole);
-        user.setRoles(roles);
-
-        User savedUser = userRepository.save(user);
-        auditService.logUserRegistration(savedUser);
-        return savedUser;
-    }
-
-    private AuthResponse buildAuthResponse(String accessToken, String refreshToken, User user) {
-        Set<String> roleNames = user.getRoles().stream()
-                .map(Role::getName)
-                .collect(Collectors.toSet());
-
-        AuthResponse.UserInfo userInfo = AuthResponse.UserInfo.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .fullName(user.getFullName())
-                .authProvider(user.getAuthProvider())
-                .roles(roleNames)
-                .emailVerified(user.getEmailVerified())
-                .build();
+    private AuthResponse buildAuthResponse(String accessToken, String refreshToken) {
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .expiresIn(1800L)
-                .user(userInfo)
                 .build();
     }
 }

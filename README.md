@@ -136,6 +136,8 @@ Prometheus data source and JVM dashboard are pre-configured.
 - **Caching:** Caffeine for fast, in-memory caching of frequent queries.
 - **Monitoring:** Actuator, Prometheus, and Grafana for real-time insights.
 
+[Performance Enhancement Analysis](https://docs.google.com/document/d/1Jn4xHDcLPnPmP_oqQhclInU1OnL83Dg5OOytQX5aT4k/edit?usp=sharing)
+
 ---
 
 ## 9. References

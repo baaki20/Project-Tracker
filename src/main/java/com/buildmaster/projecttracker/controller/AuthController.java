@@ -80,7 +80,6 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
-        // Use deleteCookie for JWT
         CookieUtils.deleteCookie(request, response, "jwt");
         CookieUtils.deleteCookie(request, response, "JSESSIONID");
 
@@ -91,7 +90,6 @@ public class AuthController {
 
     @GetMapping("/oauth2/login/google")
     public ResponseEntity<String> getGoogleAuthUrl() {
-        // Defensive: check for nulls
         if (googleClientId == null || googleRedirectUri == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Google OAuth2 client ID or redirect URI is not configured.");

@@ -62,24 +62,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/").permitAll()
-                        .requestMatchers("/api/*/auth/register", "/api/*/auth/login", "/api/*/auth/logout").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/*/api-docs/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/oauth2/**").permitAll()
-                        .anyRequest().authenticated()
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(authz -> authz
+                .requestMatchers("/").permitAll()
+                .requestMatchers("/api/*/auth/register", "/api/*/auth/login", "/api/*/auth/logout").permitAll()
+                .requestMatchers("/swagger-ui/**", "/*/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/oauth2/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(
+                        authorization -> authorization.baseUri("/oauth2/authorize")
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .oauth2Login(oauth2 -> oauth2
-                        .authorizationEndpoint(
-                                authorization -> authorization.baseUri("/oauth2/authorize")
-                        )
-                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .successHandler(oAuth2AuthenticationSuccessHandler)
-                )
-        ;
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2AuthenticationSuccessHandler)
+            );
         return http.build();
     }
 

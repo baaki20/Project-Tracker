@@ -210,7 +210,7 @@ public class User implements UserDetails {
         }
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 }

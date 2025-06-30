@@ -13,6 +13,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -24,6 +26,7 @@ import java.util.Optional;
 @RequestMapping("/api/v1/tasks")
 @RequiredArgsConstructor
 @Slf4j
+@PreAuthorize("hasRole('ADMIN')")
 public class TaskController {
 
     private final TaskService taskService;
@@ -78,6 +81,7 @@ public class TaskController {
         }
     }
 
+    @PreAuthorize("hasRole('DEVELOPER')")
     @GetMapping("/developer/{developerId}")
     public ResponseEntity<Page<Task>> getTasksByDeveloper(
             @PathVariable Long developerId,
@@ -94,7 +98,7 @@ public class TaskController {
         }
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER', 'DEVELOPER')")
+    @PreAuthorize("hasRole('MANAGER')")
     @PostMapping
     public ResponseEntity<?> createTask(@Valid @RequestBody Task task) {
         try {
@@ -108,13 +112,29 @@ public class TaskController {
         }
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER', 'DEVELOPER')")
+    @PreAuthorize("hasRole('DEVELOPER')")
     @PutMapping("/{id}")
     public ResponseEntity<?> updateTask(@PathVariable Long id, @Valid @RequestBody Task task) {
         try {
             Optional<Task> existingTask = taskService.findById(id);
             if (existingTask.isEmpty()) {
                 return ResponseEntity.notFound().build();
+            }
+
+            Task foundTask = existingTask.get();
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            String username = authentication.getName();
+
+            if (!isAdmin) {
+                if (foundTask.getDeveloper() == null ||
+                    !foundTask.getDeveloper().getUsername().equals(username)) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body("You are not authorized to update this task.");
+                }
+                task.setDeveloper(foundTask.getDeveloper());
             }
 
             task.setId(id);
@@ -146,6 +166,7 @@ public class TaskController {
         }
     }
 
+    @PreAuthorize("hasRole('MANAGER')")
     @PostMapping("/assign")
     public ResponseEntity<?> assignTaskToDeveloper(@RequestBody AssignTaskRequest request) {
         try {

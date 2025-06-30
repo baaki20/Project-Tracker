@@ -32,7 +32,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity()
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -62,42 +62,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/", "/oauth2/**", "/login").permitAll()
-                        .requestMatchers("/api/*/auth/register", "/api/*/auth/login").permitAll()
-                        .requestMatchers("/api/*/auth/logout").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/api/v1/health", "/api/v1/test").permitAll()
-                        .requestMatchers("/").permitAll()
-
-                        .requestMatchers("/api/*/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/*/projects").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/*/projects").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/*/projects/*/summary").hasAnyRole("CONTRACTOR", "DEVELOPER", "MANAGER", "ADMIN")
-                        .requestMatchers("/api/*/users/*").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/*/tasks").hasRole("DEVELOPER")
-                        .requestMatchers(HttpMethod.PUT, "/api/*/tasks").hasRole("DEVELOPER")
-
-                        .requestMatchers(HttpMethod.GET, "/api/*/projects").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/*/tasks").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/*/developers").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/*/tasks/*").authenticated()
-                        .requestMatchers("/api/*/users/").authenticated()
-
-                        .anyRequest().authenticated()
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(authz -> authz
+                .requestMatchers("/").permitAll()
+                .requestMatchers("/api/*/auth/register", "/api/*/auth/login", "/api/*/auth/logout").permitAll()
+                .requestMatchers("/swagger-ui/**", "/*/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/oauth2/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(
+                        authorization -> authorization.baseUri("/oauth2/authorize")
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .oauth2Login(oauth2 -> oauth2
-                        .authorizationEndpoint(
-                                authorization -> authorization.baseUri("/oauth2/authorize")
-                        )
-                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .successHandler(oAuth2AuthenticationSuccessHandler)
-                )
-        ;
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2AuthenticationSuccessHandler)
+            );
         return http.build();
     }
 
